@@ -219,4 +219,25 @@ describe("SignUp Controller", () => {
       password: "any_password",
     });
   });
+
+  test("Should call EmailValidator with correct email", () => {
+    const { sut } = makeSut();
+
+    const httpRequest = {
+      body: {
+        name: "any_name",
+        email: "any_email",
+        password: "any_password",
+        passwordConfirmation: "any_password",
+      },
+    };
+    const response = sut.handle(httpRequest);
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toEqual({
+      id: "valid_id",
+      name: "valid_name",
+      email: "valid_email",
+      password: "valid_password",
+    });
+  });
 });
