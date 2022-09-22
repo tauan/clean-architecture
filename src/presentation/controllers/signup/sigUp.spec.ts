@@ -9,6 +9,7 @@ import {
   AddAccount,
   AddAccountModel,
   AccountModel,
+  HttpRequest,
 } from "./signup-protocols";
 
 interface SutTypes {
@@ -26,14 +27,21 @@ const makeEmailValidator = (): EmailValidator => {
   return new EmailValidatorStub();
 };
 
+const makeFakeRequest = (): HttpRequest => ({
+  body: {
+    name: "any_name",
+    email: "any_email",
+    password: "any_password",
+    passwordConfirmation: "any_password",
+  },
+});
+
 const makeAddAccount = (): AddAccount => {
   class AddAccountStub implements AddAccount {
     async add(account: AddAccountModel): Promise<AccountModel> {
       const fakeAccount = {
         id: "valid_id",
-        name: "valid_name",
-        email: "valid_email",
-        password: "valid_password",
+        ...makeFakeRequest().body,
       };
 
       return fakeAccount;
@@ -133,15 +141,7 @@ describe("SignUp Controller", () => {
     const { sut, emailValidatorStub } = makeSut();
     jest.spyOn(emailValidatorStub, "isValid").mockReturnValueOnce(false);
 
-    const httpRequest = {
-      body: {
-        name: "any_name",
-        email: "invalid_email",
-        password: "any_password",
-        passwordConfirmation: "any_password",
-      },
-    };
-    const response = await sut.handle(httpRequest);
+    const response = await sut.handle(makeFakeRequest());
     expect(response.statusCode).toBe(400);
     expect(response.body).toEqual(new InvalidParamError("email"));
   });
@@ -150,15 +150,7 @@ describe("SignUp Controller", () => {
     const { sut, emailValidatorStub } = makeSut();
     const isValidSpy = jest.spyOn(emailValidatorStub, "isValid");
 
-    const httpRequest = {
-      body: {
-        name: "any_name",
-        email: "any_email",
-        password: "any_password",
-        passwordConfirmation: "any_password",
-      },
-    };
-    sut.handle(httpRequest);
+    sut.handle(makeFakeRequest());
     expect(isValidSpy).toHaveBeenCalledWith("any_email");
   });
 
@@ -168,15 +160,7 @@ describe("SignUp Controller", () => {
       throw new Error();
     });
 
-    const httpRequest = {
-      body: {
-        name: "any_name",
-        email: "invalid_email",
-        password: "any_password",
-        passwordConfirmation: "any_password",
-      },
-    };
-    const response = await sut.handle(httpRequest);
+    const response = await sut.handle(makeFakeRequest());
     expect(response.statusCode).toBe(500);
     expect(response.body).toEqual(new ServerError());
   });
@@ -187,15 +171,7 @@ describe("SignUp Controller", () => {
       throw new Error();
     });
 
-    const httpRequest = {
-      body: {
-        name: "any_name",
-        email: "invalid_email",
-        password: "any_password",
-        passwordConfirmation: "any_password",
-      },
-    };
-    const response = await sut.handle(httpRequest);
+    const response = await sut.handle(makeFakeRequest());
     expect(response.statusCode).toBe(500);
     expect(response.body).toEqual(new ServerError());
   });
@@ -204,40 +180,24 @@ describe("SignUp Controller", () => {
     const { sut, addAccountStub } = makeSut();
     const addSpy = jest.spyOn(addAccountStub, "add");
 
-    const httpRequest = {
-      body: {
-        name: "any_name",
-        email: "any_email",
-        password: "any_password",
-        passwordConfirmation: "any_password",
-      },
-    };
-    sut.handle(httpRequest);
+    sut.handle(makeFakeRequest());
     expect(addSpy).toHaveBeenCalledWith({
-      name: "any_name",
-      email: "any_email",
-      password: "any_password",
+      ...makeFakeRequest().body,
+      passwordConfirmation: undefined,
     });
   });
 
   test("Should call EmailValidator with correct email", async () => {
     const { sut } = makeSut();
 
-    const httpRequest = {
-      body: {
-        name: "any_name",
-        email: "any_email",
-        password: "any_password",
-        passwordConfirmation: "any_password",
-      },
-    };
-    const response = await sut.handle(httpRequest);
+    const response = await sut.handle(makeFakeRequest());
     expect(response.statusCode).toBe(200);
     expect(response.body).toEqual({
       id: "valid_id",
-      name: "valid_name",
-      email: "valid_email",
-      password: "valid_password",
+      name: "any_name",
+      email: "any_email",
+      password: "any_password",
+      passwordConfirmation: "any_password",
     });
   });
 });
